@@ -1,0 +1,25 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: egress-gateway
+spec:
+  gatewayClassName: istio
+  listeners:
+    - allowedRoutes:
+        namespaces:
+          from: All
+      name: http8080
+      port: 8080
+      protocol: HTTP
+    - allowedRoutes:
+        namespaces:
+          from: All
+      name: http80
+      port: 80
+      protocol: HTTP
+    - allowedRoutes:
+        namespaces:
+          from: All
+      name: http443
+      port: 443
+      protocol: HTTP
