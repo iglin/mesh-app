@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mesh-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mesh-app
+  template:
+    metadata:
+      labels:
+        app: mesh-app
+    spec:
+      containers:
+        - name: mesh-app
+          image: docker.io/iglin/mesh-app:v2.2
+          ports:
+            - containerPort: 8080
+          env:
+            - name: APP_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            limits:
+              memory: "32Mi"
+              cpu: "100m"
+            requests:
+              memory: "32Mi"
+              cpu: "100m"

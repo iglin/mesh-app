@@ -23,7 +23,8 @@ type TargetSvcRequest struct {
 }
 
 type TargetSvcResponse struct {
-	RequestDetails
+	Body            string      `json:"body"`
+	StatusCode      int         `json:"statusCode"`
 	ResponseHeaders http.Header `json:"responseHeaders"`
 }
 
@@ -62,21 +63,25 @@ func handleRequest(w http.ResponseWriter, req *http.Request) {
 	}
 	bodyStr := string(body)
 
-	targetSvcResponse := sendRequestIfNeeded(bodyStr)
-
 	reqDetails := RequestDetails{
-		AppId:             appId,
-		AppName:           appName,
-		Url:               req.URL.String(),
-		Host:              req.Host,
-		Method:            req.Method,
-		Proto:             req.Proto,
-		Headers:           req.Header,
-		Body:              bodyStr,
-		Cookies:           req.Cookies(),
-		TargetSvcResponse: targetSvcResponse,
+		AppId:   appId,
+		AppName: appName,
+		Url:     req.URL.String(),
+		Host:    req.Host,
+		Method:  req.Method,
+		Proto:   req.Proto,
+		Headers: req.Header,
+		Body:    bodyStr,
+		Cookies: req.Cookies(),
 	}
 	log.Infof("App %s with id %v got request: %v", appName, appId, reqDetails)
+
+	targetSvcResponse := sendRequestIfNeeded(bodyStr)
+	if targetSvcResponse != nil {
+		log.Infof("Got target service response %+v", targetSvcResponse)
+		reqDetails.TargetSvcResponse = targetSvcResponse
+	}
+
 	response, err := json.Marshal(&reqDetails)
 	if err != nil {
 		log.Errorf("Failed to marshall response json:\n %v", err)
@@ -117,14 +122,19 @@ func sendRequestIfNeeded(body string) *TargetSvcResponse {
 	}
 	defer resp.Body.Close()
 
+	res := &TargetSvcResponse{
+		StatusCode:      resp.StatusCode,
+		ResponseHeaders: resp.Header,
+	}
+
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Errorf("Failed to read target service response body:\n %v", err)
+		return res
 	}
-	var responseBody TargetSvcResponse
-	if err := json.Unmarshal(respBody, &responseBody); err != nil {
-		log.Errorf("Failed to unmarshall TargetSvcResponse from json:\n %v", err)
-		return nil
+
+	if respBody != nil {
+		res.Body = string(respBody)
 	}
-	return &responseBody
+	return res
 }
